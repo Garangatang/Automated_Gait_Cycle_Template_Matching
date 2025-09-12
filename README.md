@@ -22,7 +22,7 @@ An non-automated V1 version is located [here](https://github.com/Garangatang/Gai
 ## Collaborators
 
 [![Github Badge](https://img.shields.io/badge/-Grange_Simpson-3A3B3C?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Garangatang)
-[![Github Badge]
+[![Ivan Khimach]
 [![Github Badge](https://img.shields.io/badge/-NERVES_Lab-3A3B3C?style=for-the-badge&logo=github&logoColor=white)](https://github.com/NERVESLabUtah)
 
 ## Video of How Automated Template Matching Functions

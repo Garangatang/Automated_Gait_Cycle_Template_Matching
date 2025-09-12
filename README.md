@@ -15,14 +15,14 @@ Features will be uploaded and described after testing has finished.
 
 ## Previous Versions
 
-A V1 version is located [here](https://github.com/Garangatang/Gait_Cycle_Template_Matching/tree/main)
+An non-automated V1 version is located [here](https://github.com/Garangatang/Gait_Cycle_Template_Matching/tree/main)
 
 ## Updates
 
 ## Collaborators
 
 [![Github Badge](https://img.shields.io/badge/-Grange_Simpson-3A3B3C?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Garangatang)
-Ivan Khimach
+[![Github Badge]
 [![Github Badge](https://img.shields.io/badge/-NERVES_Lab-3A3B3C?style=for-the-badge&logo=github&logoColor=white)](https://github.com/NERVESLabUtah)
 
 ## Video of How Automated Template Matching Functions

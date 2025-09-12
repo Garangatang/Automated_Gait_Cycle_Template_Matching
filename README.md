@@ -4,7 +4,7 @@
 
 A Python program which utilizes an adaptive template to mark all heel strike and toe off occurences in ground reaction force (GRF) data.
 
-The template also can be generalized to other sensor signals, but has not been fully tested on other sensor signals besides GRF data at this time.
+The template also can be adapted to other sensor signals, but has not been fully tested on other sensor signals besides GRF data at this time.
 
 ## Features
 

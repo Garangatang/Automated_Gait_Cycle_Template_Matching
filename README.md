@@ -8,7 +8,7 @@ The template also can be adapted to other sensor signals, but has not been fully
 
 ## Features
 
-Features will be uploaded and described after testing has finished.
+Features will be uploaded and described after publication in Spring 2026.
 
 ## Instructions
 

@@ -147,6 +147,63 @@ class Adaptive_Template_Matching:
         
         return numerator / (windows_norm * template_norm)
 
+    def _matrix_accepted_inds_rms_calculations(self, pearson_corr_arr: np.ndarray, norm_data: np.ndarray, 
+                                                idx_cand:np.ndarray, threshold: float, flat_err_thresh: float):
+        # Filter pearson_corr_arr and idx_cand based on the threshold
+        mask_initial = pearson_corr_arr >= threshold
+        idx_filtered = idx_cand[mask_initial]
+        scores_filtered = pearson_corr_arr[mask_initial]
+
+        # Extract only the windows that passed the correlation check
+        # Shape: (N_candidates, W)
+        segs = norm_data[idx_filtered]
+        N, W = segs.shape
+
+        if N == 0:
+            return [], []
+
+        # Vectorized Least Squares Solve 
+        # We want to solve segs = a * template + b
+        # Construct Design Matrix A: [template_column, ones_column]
+        template = self.template.flatten()
+        A = np.column_stack([template, np.ones(W)]) # Shape: (W, 2)
+
+        # Pre-calculate the Pseudoinverse of A once
+        # Solve for ALL segments (N) simultaneously
+        # Result coeffs shape: (2, N)
+        A_pinv = np.linalg.pinv(A)
+        coeffs = A_pinv @ segs.T 
+
+        a = coeffs[0, :, None] # Slopes, reshaped to (N, 1) for broadcasting
+        b = coeffs[1, :, None] # Intercepts, reshaped to (N, 1) for broadcasting
+
+        # Calculate Fits and Errors (N, W)
+        # Broadcast: (N, 1) * (1, W) + (N, 1) -> (N, W)
+        seg_fit = (a * template) + b
+        diff_sq = (segs - seg_fit)**2
+
+        # Relative RMS Calculation
+        # Numerator: RMS of residuals
+        rms_num = np.sqrt(diff_sq.mean(axis=1))
+        # Denominator: Std of the fit (RMS of mean-centered fit)
+        rms_den = np.std(seg_fit, axis=1) + 1e-12
+        rel_rms_vals = rms_num / rms_den
+
+        # Check first half of the window against template
+        half_w = W // 2
+        rms_flat_vals = np.sqrt(diff_sq[:, :half_w].mean(axis=1))
+
+        final_keep = (rel_rms_vals <= rel_err) & (rms_flat_vals <= flat_err_thresh)
+
+        # 7. Final Extraction
+        accepted = idx_filtered[final_keep].tolist()
+        scores = scores_filtered[final_keep].tolist()
+
+        accepted = np.asarray(accepted, int)
+        scores   = np.asarray(scores,   float)
+
+        return accepted, scores
+
     def _min_max_norm(self, x):
         """Min–max normalization (0–1)."""
         x = np.asarray(x, dtype=float)
@@ -307,7 +364,6 @@ class Adaptive_Template_Matching:
 
         # Candidates by inexpensive gates
         idx_cand = np.nonzero((nsad > sad_thresh) & amp_ok & std_ok & low_ok)[0]
-        #idx_cand = np.nonzero((nsad > amp_ok) & std_ok & low_ok)[0]
 
         # VISUAL SAD : raw windows vs template
         #sad_vis = -np.sum(np.abs(win_mat - self.template), axis=1)
@@ -317,31 +373,10 @@ class Adaptive_Template_Matching:
         accepted, scores = [], []
 
         pearson_corr_arr = self._rolling_window_correlation(self.template, win_norm[idx_cand])
-        for r, i in zip(pearson_corr_arr, idx_cand):
-            seg_norm = win_norm[i]
-            #r = self._corrcoef_safe(self.template, seg_norm)
-            if r < threshold:
-                continue
 
-            A = np.vstack([self.template, np.ones_like(self.template)]).T
-            a, b = np.linalg.lstsq(A, seg_norm, rcond=None)[0]
-            seg_fit = a * self.template + b
-
-            rel_rms = np.sqrt(((seg_norm - seg_fit)**2).mean()) / (
-                      np.sqrt(((seg_fit - seg_fit.mean())**2).mean()) + 1e-12)
-            if rel_rms > rel_err:
-                continue
-
-            rms_flat = np.sqrt(((seg_norm[:w//2] - seg_fit[:w//2])**2).mean())
-            if rms_flat > flat_err_thresh:
-                continue
-
-            accepted.append(i); scores.append(r)
-
-        accepted = np.asarray(accepted, int)
-        scores   = np.asarray(scores,   float)
-
-                # Debug: panel 1
+        accepted, scores = self._matrix_accepted_inds_rms_calculations(pearson_corr_arr = pearson_corr_arr, norm_data = win_norm, 
+                                                                    idx_cand = idx_cand, threshold = threshold, flat_err_thresh = flat_err_thresh)
+        # Debug: panel 1
         if show_debug:
             self._plot_sad_legacy_visual(sad_vis, title="−Σ|Δ|  (no shift)", threshold = sad_thresh)
 

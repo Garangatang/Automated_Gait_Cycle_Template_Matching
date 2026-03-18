@@ -122,33 +122,49 @@ class Adaptive_Template_Matching:
             window with the highest correlation to the template.
 
         Args:
-            a: Current template
-            b: Window of data to correlate the template to
+            template: Current template
+            data_window: Window of data to correlate the template to
         Returns:
             0 when either vector has zero variance, else returns correlation coefficient between a and b.
         """
         return 0.0 if template.std() == 0 or data_window.std() == 0 else float(np.corrcoef(template, data_window)[0, 1])
 
     def _rolling_window_correlation(self, template: list, windowed_data: list):
-        """
-        Pearson Correlation Coefficient (r) calculated through numpy arrays
+        """ Matrix math for Pearson Correlation Coefficient (r) calculated across the windowed data
+
+        Args:
+            template: current template shape in a list.
+            windowed_data: input data that has been 
+        Returns:
+            0 when either vector has zero variance, else returns correlation coefficient between a and b.
         """
         # Center the data (Subtract the mean)
         # We subtract the mean of each window and the mean of the template
         windows_centered = windowed_data - np.mean(windowed_data, axis=1, keepdims=True)
         template_centered = template - np.mean(template)
         
-        # 3. Calculate the numerator (Dot product along the window axis)
+        # Calculate the numerator (Dot product along the window axis)
         numerator = np.sum(windows_centered * template_centered, axis=1)
         
-        # 4. Calculate the denominator (Product of the norms)
+        # Calculate the denominator (Product of the norms)
         windows_norm = np.sqrt(np.sum(windows_centered**2, axis=1))
         template_norm = np.sqrt(np.sum(template_centered**2))
         
         return numerator / (windows_norm * template_norm)
 
     def _matrix_accepted_inds_rms_calculations(self, pearson_corr_arr: np.ndarray, norm_data: np.ndarray, 
-                                                idx_cand:np.ndarray, threshold: float, flat_err_thresh: float):
+                                                idx_cand:np.ndarray, threshold: float, first_half_err_thresh: float):
+        """ RMS calculations between template and data around accepted indices after _rolling_window_correlation 
+
+        Args:
+            pearson_corr_arr: Output from _rolling_window_correlation.
+            norm_data: Normalized windowed data.
+            idx_cand: Candidates indices for highest match with template after passing filters.
+            threshold: threshold for pearson correlation value.
+            first_half_err_thresh: threshold for pearson rms correlation of first half of the template.
+        Returns:
+            accepted, scores: The accepted indices after rms calculations against the template, and rms scores.
+        """
         # Filter pearson_corr_arr and idx_cand based on the threshold
         mask_initial = pearson_corr_arr >= threshold
         idx_filtered = idx_cand[mask_initial]
@@ -169,7 +185,6 @@ class Adaptive_Template_Matching:
         A = np.column_stack([template, np.ones(W)]) # Shape: (W, 2)
 
         # Pre-calculate the Pseudoinverse of A once
-        # Solve for ALL segments (N) simultaneously
         # Result coeffs shape: (2, N)
         A_pinv = np.linalg.pinv(A)
         coeffs = A_pinv @ segs.T 
@@ -193,9 +208,8 @@ class Adaptive_Template_Matching:
         half_w = W // 2
         rms_flat_vals = np.sqrt(diff_sq[:, :half_w].mean(axis=1))
 
-        final_keep = (rel_rms_vals <= rel_err) & (rms_flat_vals <= flat_err_thresh)
+        final_keep = (rel_rms_vals <= rel_err) & (rms_flat_vals <= first_half_err_thresh)
 
-        # 7. Final Extraction
         accepted = idx_filtered[final_keep].tolist()
         scores = scores_filtered[final_keep].tolist()
 
@@ -205,19 +219,23 @@ class Adaptive_Template_Matching:
         return accepted, scores
 
     def _min_max_norm(self, x):
-        """Min–max normalization (0–1)."""
+        """ Min–max normalization (0–1).
+
+        Args:
+            x: Input data to normalize.
+        Returns:
+            Returns data normalized between 0 and 1.
+        """
         x = np.asarray(x, dtype=float)
         rng = x.max() - x.min()
         return (x - x.min()) / (rng + 1e-12)
 
-    def _zscore(self, x):
-        """Standard score."""
-        x = np.asarray(x, dtype=float)
-        return (x - x.mean()) / (x.std() + 1e-12)
-
     def reset(self):
-        """ Reset the template shape if inputting 
+        """ Reset the template shape to the initial basic shape if starting on a new dataset.
 
+        Args:
+            
+        Returns:  
         """
         self.template = self._min_max_norm(self.template_save.astype(float))
         self.template = self.template * self.template_scaler
@@ -228,7 +246,15 @@ class Adaptive_Template_Matching:
 
     # --- visualization-only helpers (do NOT affect backend / gating) -------------------------
     def _moving_average_1d(self, y: np.ndarray, w: int) -> np.ndarray:
-        """Odd-length moving average for smoother plots."""
+        """ Odd-length moving average for smoother plots.
+
+        Args:
+            y: Data to smooth.
+            w: Window size for smoothing.
+            
+        Returns:  
+            Smoothed data.
+        """
         L = len(y)
         w = max(3, min(int(w), L - 1))
         if w % 2 == 0:
@@ -236,17 +262,30 @@ class Adaptive_Template_Matching:
         k = np.ones(w, dtype=float) / w
         return np.convolve(np.asarray(y, float), k, mode="same")
 
-    def plot_template(self, title="Template", raw=False):
+    def plot_template(self, title="Template"):
+        """ Template shape plotting function for debugging purposes.
+
+        Args:
+            title: Title for the pop up plot.
+            
+        Returns:  
+        """
         data = self.template if raw else self._min_max_norm(self.template)
         plt.figure(figsize=(8, 3))
         plt.plot(data, c="purple")
         plt.title(title + (" (raw z-scored)" if raw else ""))
         plt.grid(); plt.tight_layout(); plt.show()
 
-    def _plot_sad_legacy_visual(self, sad_vis: np.ndarray, title="−Σ|Δ|  (no shift)", threshold: float = 0.0, figsize: tuple=(14, 2.8)):
-        """
-        • smoothed legacy −Σ|Δ| (raw windows vs template)
-        • dashed red line at 0; y-axis with 0 at top 
+    def _plot_sad_legacy_visual(self, sad_vis: np.ndarray, title="−Σ|Δ|  (no shift)", threshold: float = 0.0, 
+                                figsize: tuple=(14, 2.8)):
+        """ Plotting the sum absolute difference signal.
+
+        Args:
+            sad_vis: Sum absolute difference signal to plot.
+            title: Title for the output plot.
+            threshold: where to place threshold on the plot.
+            figsize: tuple of output plot length and height.
+        Returns:
         """
         #y = np.minimum(np.asarray(sad_vis, float), 0.0)
         y = np.asarray(sad_vis, float)
@@ -268,13 +307,12 @@ class Adaptive_Template_Matching:
             window with the highest correlation to the template.
 
         Args:
-            signal_data:
-            mark_data:
-            horiz_axis_line_inds:
-            vert_axis_line_inds:
-            plot_option: Can either be "sad_legacy", "matches", "template_composite"
+            signal_data: Input signal to plot.
+            mark_data: template best match marking indices.
+            horiz_axis_line_inds: List of horizontal values to place on the plot at specified indices.
+            vert_axis_line_inds: List of vertical values to place on the plot at specified indices.
+            plot_option: Gating for plots, can either be "sad_legacy", "matches", or "template_composite"
         Returns:
-            
         """
         # Debug: panel 1
         if plot_option == "sad_legacy":
@@ -421,7 +459,18 @@ class Adaptive_Template_Matching:
 
         return accepted, scores
 
-    def update_template(self, data, match_idx, top_n=50, show_debug=True):
+    def update_template(self, data: np.ndarray, match_idx: np.ndarray, top_n: int=50, show_debug: bool=True):
+        """ Update the template shape using data from accepted indices.
+
+        Args:
+            data: Input signal to extract signal from to update indices
+            match_idx: indices for best match indices in the signal and template.
+            top_n: Number of top scoring indices to be used in updating the template.
+            show_debug: Popup plots for debugging purposes.
+            
+        Returns:  
+            
+        """
         if match_idx.size == 0:
             print("⚠️  No matches – template unchanged.")
             return
@@ -438,20 +487,7 @@ class Adaptive_Template_Matching:
                             title = f"Template updated from all accepted segments (n={len(segs)})", label = "New template (ALL)",
                             plot_option = "template_composite")
 
-    """
-    One-shot scan with plotting and summary stats.
 
-    Returns
-    -------
-    idx : np.ndarray[int]
-        Accepted window start indices.
-    sco : np.ndarray[float]
-        Pearson r scores.
-
-    Plot
-    ----
-    Overlays accepted windows as shaded spans over normalized signal.
-    """
     def final_template_match_and_plot(self, name, data,
                                   threshold, amp_max,
                                   pos_shift, sad_thresh,
@@ -464,6 +500,20 @@ class Adaptive_Template_Matching:
                                   cluster_metric="sad",
                                   cluster_radius=None,
                                   show_debug=True):
+        """
+        One-shot scan with plotting and summary stats.
+
+        Returns
+        -------
+        idx : np.ndarray[int]
+            Accepted window start indices.
+        sco : np.ndarray[float]
+            Pearson r scores.
+
+        Plot
+        ----
+        Overlays accepted windows as shaded spans over normalized signal.
+        """
 
         # Scanning data with template for matches
         idx, sco = self.scan_matches(

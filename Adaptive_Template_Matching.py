@@ -4,7 +4,7 @@ import numpy as np
 
 """
 Written by Ivan Khimach and Grange Simpson
-Version: 2026.03.17
+Version: 2026.03.18
 """
 
 class Adaptive_Template_Matching:

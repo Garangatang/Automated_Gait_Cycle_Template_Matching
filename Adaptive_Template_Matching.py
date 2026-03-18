@@ -262,12 +262,12 @@ class Adaptive_Template_Matching:
         k = np.ones(w, dtype=float) / w
         return np.convolve(np.asarray(y, float), k, mode="same")
 
-    def plot_template(self, title="Template"):
+    def plot_template(self, title="Template", raw = False):
         """ Template shape plotting function for debugging purposes.
 
         Args:
             title: Title for the pop up plot.
-            
+            raw: Bool for plot unnormalized or normalized template shape.
         Returns:  
         """
         data = self.template if raw else self._min_max_norm(self.template)
@@ -413,7 +413,7 @@ class Adaptive_Template_Matching:
         pearson_corr_arr = self._rolling_window_correlation(self.template, win_norm[idx_cand])
 
         accepted, scores = self._matrix_accepted_inds_rms_calculations(pearson_corr_arr = pearson_corr_arr, norm_data = win_norm, 
-                                                                    idx_cand = idx_cand, threshold = threshold, flat_err_thresh = flat_err_thresh)
+                                                                    idx_cand = idx_cand, threshold = threshold, first_half_err_thresh = flat_err_thresh)
         # Debug: panel 1
         if show_debug:
             self._plot_sad_legacy_visual(sad_vis, title="−Σ|Δ|  (no shift)", threshold = sad_thresh)

@@ -8,7 +8,7 @@ The template also can be adapted to other sensor signals, but has not been fully
 
 ## Features
 
-Features will be uploaded and described after publication in May 2026.
+A Python Package will be uploaded here with full descriptions after the paper's journal submission in May 2026.
 
 ## Instructions
 

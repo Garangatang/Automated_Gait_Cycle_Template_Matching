@@ -8,14 +8,14 @@ The template also can be adapted to other sensor signals, but has not been fully
 
 ## Features
 
-Features will be uploaded and described after publication in Spring 2026.
+Features will be uploaded and described after publication in May 2026.
 
 ## Instructions
 
 
 ## Previous Versions
 
-An non-automated V1 version is located [here](https://github.com/Garangatang/Gait_Cycle_Template_Matching/tree/main)
+A non-automated V1 version is located [here](https://github.com/Garangatang/Gait_Cycle_Template_Matching/tree/main)
 
 ## Updates
 

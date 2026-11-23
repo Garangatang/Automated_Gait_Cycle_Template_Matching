@@ -27,4 +27,4 @@ A non-automated V1 version is located [here](https://github.com/Garangatang/Gait
 
 ## Video of How Automated Template Matching Works
 
-<video src= "https://github.com/user-attachments/assets/4c19e08e-cad9-4a7a-853f-686858dec092" width="320" height="240" controls></video>
+<video src= "[https://github.com/user-attachments/assets/4c19e08e-cad9-4a7a-853f-686858dec092](https://github-production-user-asset-6210df.s3.amazonaws.com/47489148/488982978-4c19e08e-cad9-4a7a-853f-686858dec092.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20261123%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20261123T213727Z&X-Amz-Expires=300&X-Amz-Signature=a1ca00e4313d84bb970098fc7a45673721fb8fb245a03a98494029836648f49c&X-Amz-SignedHeaders=host&response-content-type=video%2Fmp4)" width="320" height="240" controls></video>
